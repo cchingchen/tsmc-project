@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  hivemq:
+    image: hivemq/hivemq-ce:latest
+    container_name: hivemq
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "8000:8000"
+    volumes:
+      - ./conf:/opt/hivemq/conf
+      - ./data:/opt/hivemq/data
+      - ./log:/opt/hivemq/log
+      - ./extensions:/opt/hivemq/extensions
+    environment:
+      - HIVEMQ_LOG_LEVEL=INFO

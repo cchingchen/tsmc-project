@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hivemq>
+    <listeners>
+        <tcp-listener>
+            <port>1883</port>
+            <bind-address>0.0.0.0</bind-address>
+        </tcp-listener>
+    </listeners>
+
+    <anonymous-usage-allowed>true</anonymous-usage-allowed>
+</hivemq>
