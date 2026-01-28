@@ -5,6 +5,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import SensorLevel from './pages/SensorLevel';
 import FactoryLevel from './pages/FactoryLevel';
 import ApplicationLevel from './pages/ApplicationLevel';
+import { Login } from './pages/Login';
+import { Toaster } from 'react-hot-toast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,8 +20,10 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" reverseOrder={false} />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<FactoryLevel />} />
           <Route path="/sensor/:deviceId" element={<SensorLevel />} />
           <Route path="/application/:category" element={<ApplicationLevel />} />
