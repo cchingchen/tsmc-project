@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api, SensorData } from '../services/api';
+import { QUERY_CONFIG, TIME_RANGE_MS } from '../constants/config';
 
 export const useDevices = (category?: 'motor' | 'pipe', status?: string | null) => {
     return useQuery({
@@ -8,17 +9,8 @@ export const useDevices = (category?: 'motor' | 'pipe', status?: string | null) 
             type: category,
             status: status || undefined
         }),
-        refetchInterval: 5000,
-        staleTime: 2000,
-    });
-};
-
-export const useDeviceDetail = (id: string) => {
-    return useQuery({
-        queryKey: ['device', id],
-        queryFn: () => api.getDeviceDetails(id),
-        enabled: !!id,
-        refetchInterval: 5000,
+        refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL_FAST,
+        staleTime: QUERY_CONFIG.STALE_TIME,
     });
 };
 
@@ -26,59 +18,88 @@ export const useFactoryStats = () => {
     return useQuery({
         queryKey: ['devices', 'all'],
         queryFn: () => api.searchDevices({}),
-        refetchInterval: 5000,
-        select: (allDevices) => {
-            const motors = allDevices.filter(d => d.id.startsWith('motor') || (!d.id.startsWith('pipe') && allDevices.indexOf(d) % 2 === 0));
-            const pipes = allDevices.filter(d => d.id.startsWith('pipe') || (!d.id.startsWith('motor') && allDevices.indexOf(d) % 2 !== 0));
+        refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL_FAST,
+        select: (allDevices: SensorData[]) => {
+            const initialStats = { warning: 0, normal: 0, maintenance: 0, total: 0 };
 
-            const getStats = (list: typeof allDevices) => ({
-                warning: list.filter(d => d.status === 'warning').length,
-                normal: list.filter(d => d.status === 'normal').length,
-                maintenance: list.filter(d => d.status === 'maintenance').length,
-                total: list.length
+            const result = allDevices.reduce((acc, device) => {
+                const isMotor = device.type === 'motor';
+                const targetList = isMotor ? acc.motorDevices : acc.pipeDevices;
+                const targetStats = isMotor ? acc.motorStats : acc.pipeStats;
+
+                targetList.push(device);
+
+                targetStats.total++;
+
+                const statusKey = device.status;
+
+                targetStats[statusKey]++;
+
+                return acc;
+            }, {
+                motorDevices: [] as SensorData[],
+                pipeDevices: [] as SensorData[],
+                motorStats: { ...initialStats },
+                pipeStats: { ...initialStats },
             });
 
             return {
-                motorDevices: motors,
-                pipeDevices: pipes,
-                motorStats: getStats(motors),
-                pipeStats: getStats(pipes),
+                ...result,
                 totalCount: allDevices.length,
-                totalWarning: allDevices.filter(d => d.status === 'warning').length
+                totalWarning: result.motorStats.warning + result.pipeStats.warning
             };
         }
     });
 };
 
-export const useSensorDetail = (deviceId: string | undefined) => {
+export const useDeviceDetail = (id: string | undefined) => {
     return useQuery({
-        queryKey: ['sensor', 'detail', deviceId],
-        queryFn: () => api.getDeviceDetails(deviceId!),
-        enabled: !!deviceId,
-        refetchInterval: 5000,
+        queryKey: ['device', id],
+        queryFn: () => api.getDeviceDetails(id),
+        enabled: !!id,
+        refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL_FAST,
     });
 };
 
-export const useSensorHistory = (deviceId: string | undefined, timeRange: string) => {
+export const useSensorHistory = (
+    deviceId: string | undefined,
+    timeRange: string,
+    customRange?: { start: string, end: string }
+) => {
     return useQuery({
-        queryKey: ['sensor', 'history', deviceId, timeRange],
-        queryFn: () => api.getDeviceHistory(deviceId!),
+        // timeRange 或是 customRange 改變，Query 會重新抓取
+        queryKey: ['sensor', 'history', deviceId, timeRange, customRange?.start, customRange?.end],
+        queryFn: () => api.getDeviceHistory(deviceId!, customRange),
         enabled: !!deviceId,
-        refetchInterval: 10000,
+        // 自定義範圍，關閉自動刷新
+        refetchInterval: timeRange === 'custom' ? false : QUERY_CONFIG.REFETCH_INTERVAL_SLOW,
         select: (data) => {
-            const now = new Date();
-            const msMap: Record<string, number> = { '1h': 3600000, '6h': 21600000, '24h': 86400000 };
-            const startTime = now.getTime() - (msMap[timeRange] || 3600000);
+            if (timeRange === 'custom') return data;
+
+            const now = new Date().getTime();
+            const ms = TIME_RANGE_MS[timeRange as keyof typeof TIME_RANGE_MS] || TIME_RANGE_MS['1h'];
+            const startTime = now - ms;
             return data.filter(d => new Date(d.timestamp).getTime() >= startTime);
         }
     });
 };
-
 export const useSensorFFT = (deviceId: string | undefined) => {
     return useQuery({
         queryKey: ['sensor', 'fft', deviceId],
         queryFn: () => api.getDeviceFFT(deviceId!),
         enabled: !!deviceId,
-        refetchInterval: 10000,
+        refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL_SLOW,
+    });
+};
+
+export const useUpdateDevice = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, updates }: { id: string; updates: Partial<SensorData> }) =>
+            api.updateDevice(id, updates),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices'] });
+        },
     });
 };

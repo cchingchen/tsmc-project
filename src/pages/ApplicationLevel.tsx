@@ -1,9 +1,9 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { StatusBadge } from '../components/ui/StatusBadge';
 import { useDevices } from '../hooks/useDevices';
+import { DeviceTableRow } from '../features/application/components/DeviceTableRow';
+import { Breadcrumbs } from '../components/Breadcrumbs';
+import { Header } from '../components/Header';
 
 export default function ApplicationLevel() {
     const navigate = useNavigate();
@@ -40,93 +40,63 @@ export default function ApplicationLevel() {
 
     return (
         <div className="min-h-screen bg-gray-900 p-8">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        返回廠務層總覽
-                    </button>
-                    <h1 className="text-4xl text-gray-100 mb-2">
-                        應用層監控 - {categoryName}
-                    </h1>
-                    <p className="text-gray-400">
-                        {statusFilter
-                            ? `篩選條件：${statusFilter === 'warning' ? '警報' : statusFilter === 'normal' ? '正常' : '維修'} | `
-                            : ''}
-                        共 {devices.length} 個設備
-                    </p>
-                </div>
 
-                {/* Table */}
-                <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-700/50 border-b border-gray-600">
-                                <tr>
-                                    {['Serial', 'ID', 'RSSI (dBm)', 'VBAT (V)', 'Tilt Angle (°)', 'Tilt Angle X (°)', 'Tilt Angle Y (°)', 'Last Update', 'Info'].map((head) => (
-                                        <th key={head} className="px-6 py-4 text-left text-sm text-gray-300 whitespace-nowrap">
-                                            {head}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-700">
-                                {devices.map((device) => (
-                                    <tr
-                                        key={device.id}
-                                        className="hover:bg-gray-700/50 transition-colors cursor-pointer"
-                                        onClick={() => navigate(`/sensor/${device.id}`)}
-                                    >
-                                        <td className="px-6 py-4 text-sm text-gray-200">{device.serial}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-200">{device.id}</td>
-                                        <td className="px-6 py-4 text-sm">
-                                            <span className={device.rssi < -80 ? 'text-red-400 font-medium' : 'text-gray-200'}>
-                                                {device.rssi.toFixed(1)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm">
-                                            <span className={device.vbat < 3.0 ? 'text-red-400 font-medium' : 'text-gray-200'}>
-                                                {device.vbat.toFixed(2)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm">
-                                            <span className={device.tiltAngle > 15 ? 'text-red-400 font-medium' : 'text-gray-200'}>
-                                                {device.tiltAngle.toFixed(2)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-200">
-                                            {device.tiltAngleX.toFixed(2)}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-200">
-                                            {device.tiltAngleY.toFixed(2)}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-400">
-                                            {formatDistanceToNow(new Date(device.lastUpdate), {
-                                                addSuffix: true,
-                                                locale: zhCN,
-                                            })}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <StatusBadge status={device.status === 'offline' ? 'maintenance' : device.status} />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+            <Header username={'admin'} />
+            <div className="p-8">
+                <div className="max-w-7xl mx-auto">
+                    {/* Breadcrumbs */}
+                    <Breadcrumbs
+                        items={[
+                            { label: '廠務層總覽', path: '/' },
+                            { label: `應用層監控 - ${categoryName}` }
+                        ]}
+                    />
+
+                    {/* Header */}
+                    <div className="mb-8">
+                        <h1 className="text-4xl text-gray-100 mb-2">
+                            應用層監控 - {categoryName}
+                        </h1>
+                        <p className="text-gray-400">
+                            {statusFilter
+                                ? `篩選條件：${statusFilter === 'warning' ? '警報' : statusFilter === 'normal' ? '正常' : '維修'} | `
+                                : ''}
+                            共 {devices.length} 個設備
+                        </p>
                     </div>
 
-                    {/* Empty State */}
-                    {devices.length === 0 && (
-                        <div className="text-center py-12 text-gray-400">
-                            沒有找到符合條件的設備
+
+                    {/* Table */}
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-700/50 border-b border-gray-600">
+                                    <tr>
+                                        {['Serial', 'ID', 'RSSI (dBm)', 'VBAT (V)', 'Tilt Angle (°)', 'Tilt Angle X (°)', 'Tilt Angle Y (°)', 'Last Update', 'Info'].map((head) => (
+                                            <th key={head} className="px-6 py-4 text-left text-sm text-gray-300 whitespace-nowrap">
+                                                {head}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-700">
+                                    {devices.map((device) => (
+                                        <DeviceTableRow key={device.id} device={device} />
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+
+                        {/* Empty State */}
+                        {devices.length === 0 && (
+                            <div className="text-center py-12 text-gray-400">
+                                沒有找到符合條件的設備
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+
         </div>
     );
 }
