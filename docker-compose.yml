@@ -1,0 +1,40 @@
+services:
+  iot_server:
+    build: .
+    container_name: iot-server
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+    ports:
+      - "5001:5001"
+    # depends_on:
+    #   - redis
+    restart: always
+
+  # [後端測試串接 worker 用，可以忽略]
+  # celery_worker:
+  #   build: .
+  #   container_name: celery-worker
+  #   command: celery -A worker.tasks worker --loglevel=info
+  #   environment:
+  #     - PYTHONPATH=/app
+  #   volumes:
+  #     - .:/app
+  #     - ./logs:/app/logs
+  #   depends_on:
+  #     - redis
+  #   restart: always
+
+  # redis:
+  #   image: redis:7.4-alpine
+  #   container_name: redis-iot
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: always
+
+volumes:
+  redis_data:

@@ -3,3 +3,5 @@ venv/
 env/
 bin/
 lib/
+__pycache__/
+logs
