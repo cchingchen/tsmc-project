@@ -10,6 +10,7 @@ export default function ApplicationLevel() {
     const { category } = useParams<{ category: 'motor' | 'pipe' }>();
     const [searchParams] = useSearchParams();
     const statusFilter = searchParams.get('status');
+    const username = localStorage.getItem('username');
 
     const { data: devices = [], isLoading } = useDevices(category, statusFilter);
 
@@ -41,7 +42,7 @@ export default function ApplicationLevel() {
     return (
         <div className="min-h-screen bg-gray-900 p-8">
 
-            <Header username={'admin'} />
+            <Header username={username} />
             <div className="p-8">
                 <div className="max-w-7xl mx-auto">
                     {/* Breadcrumbs */}
